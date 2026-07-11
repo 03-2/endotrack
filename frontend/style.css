@@ -100,6 +100,19 @@ button {
 
 button:hover { opacity: 0.92; }
 
+button.secondary {
+  background: white;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  margin-left: 0.5rem;
+}
+
+#auth-status {
+  font-size: 0.9rem;
+  color: var(--primary);
+  min-height: 1.2em;
+}
+
 #risk-gauge {
   display: flex;
   align-items: baseline;

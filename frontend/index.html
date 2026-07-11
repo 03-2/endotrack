@@ -14,7 +14,23 @@
   </header>
 
   <main>
-    <section id="setup-section" class="card">
+    <section id="auth-section" class="card">
+      <h2>Log in or create an account</h2>
+      <div id="auth-form">
+        <label>Email
+          <input type="email" id="auth_email" placeholder="you@example.com" />
+        </label>
+        <label>Password
+          <input type="password" id="auth_password" placeholder="At least 8 characters" />
+        </label>
+        <button id="login-btn">Log in</button>
+        <button id="register-btn" class="secondary">Create account</button>
+        <button id="logout-btn" class="secondary hidden">Log out</button>
+      </div>
+      <p id="auth-status"></p>
+    </section>
+
+    <section id="setup-section" class="card hidden">
       <h2>1. Patient profile</h2>
       <div id="patient-form">
         <label>Display name (or pseudonym)

@@ -2,10 +2,7 @@
 // this is the only line you need to change.
 const API_BASE = "http://127.0.0.1:8000";
 
-let currentPatientId = localStorage.getItem("endotrack_patient_id")
-  ? Number(localStorage.getItem("endotrack_patient_id"))
-  : null;
-
+let authToken = localStorage.getItem("endotrack_token") || null;
 let timelineChart = null;
 
 // ---------- Helpers ----------
@@ -14,10 +11,14 @@ function $(id) {
   return document.getElementById(id);
 }
 
+function authHeaders() {
+  return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+}
+
 async function apiPost(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -28,7 +29,7 @@ async function apiPost(path, body) {
 }
 
 async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`);
+  const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Request failed: ${res.status}`);
@@ -40,7 +41,101 @@ function showSection(id) {
   $(id).classList.remove("hidden");
 }
 
-// ---------- Patient setup ----------
+function hideSection(id) {
+  $(id).classList.add("hidden");
+}
+
+// ---------- Auth ----------
+
+$("login-btn").addEventListener("click", async () => {
+  const email = $("auth_email").value;
+  const password = $("auth_password").value;
+  if (!email || !password) {
+    $("auth-status").textContent = "Enter both email and password.";
+    return;
+  }
+
+  try {
+    // Login uses OAuth2's standard form-encoded body, not JSON, because the
+    // backend uses FastAPI's built-in OAuth2PasswordRequestForm.
+    const form = new URLSearchParams();
+    form.append("username", email); // the backend treats "username" as the email
+    form.append("password", password);
+
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Login failed");
+    }
+    const data = await res.json();
+    authToken = data.access_token;
+    localStorage.setItem("endotrack_token", authToken);
+    $("auth-status").textContent = "Logged in.";
+    await afterLogin();
+  } catch (err) {
+    $("auth-status").textContent = `Error: ${err.message}`;
+  }
+});
+
+$("register-btn").addEventListener("click", async () => {
+  const email = $("auth_email").value;
+  const password = $("auth_password").value;
+  if (!email || !password) {
+    $("auth-status").textContent = "Enter both email and password.";
+    return;
+  }
+  if (password.length < 8) {
+    $("auth-status").textContent = "Password must be at least 8 characters.";
+    return;
+  }
+
+  try {
+    await apiPost("/auth/register", { email, password });
+    $("auth-status").textContent = "Account created. Logging you in...";
+    $("login-btn").click();
+  } catch (err) {
+    $("auth-status").textContent = `Error: ${err.message}`;
+  }
+});
+
+$("logout-btn").addEventListener("click", () => {
+  authToken = null;
+  localStorage.removeItem("endotrack_token");
+  $("auth_email").value = "";
+  $("auth_password").value = "";
+  $("auth-status").textContent = "Logged out.";
+  $("login-btn").classList.remove("hidden");
+  $("register-btn").classList.remove("hidden");
+  $("logout-btn").classList.add("hidden");
+  hideSection("setup-section");
+  hideSection("log-section");
+  hideSection("results-section");
+});
+
+async function afterLogin() {
+  $("login-btn").classList.add("hidden");
+  $("register-btn").classList.add("hidden");
+  $("logout-btn").classList.remove("hidden");
+
+  // Does this account already have a patient profile?
+  try {
+    await apiGet("/patients/me");
+    // Profile exists -- skip straight to logging symptoms.
+    showSection("log-section");
+    showSection("results-section");
+    $("entry_date").valueAsDate = new Date();
+    await refreshTimelineAndRisk();
+  } catch {
+    // No profile yet (404) -- show the create-profile form.
+    showSection("setup-section");
+  }
+}
+
+// ---------- Patient profile setup ----------
 
 $("trying_to_conceive").addEventListener("change", (e) => {
   $("months-trying-wrap").style.display = e.target.checked ? "block" : "none";
@@ -58,10 +153,9 @@ $("create-patient-btn").addEventListener("click", async () => {
   };
 
   try {
-    const patient = await apiPost("/patients", payload);
-    currentPatientId = patient.id;
-    localStorage.setItem("endotrack_patient_id", currentPatientId);
-    $("patient-status").textContent = `Profile created (id ${patient.id}). You can start logging symptoms below.`;
+    await apiPost("/patients", payload);
+    $("patient-status").textContent = "Profile created. You can start logging symptoms below.";
+    hideSection("setup-section");
     showSection("log-section");
     showSection("results-section");
     $("entry_date").valueAsDate = new Date();
@@ -73,7 +167,6 @@ $("create-patient-btn").addEventListener("click", async () => {
 
 // ---------- Symptom logging ----------
 
-// Live-update range slider labels
 ["pain_level", "bleeding_level", "fatigue_level"].forEach((id) => {
   $(id).addEventListener("input", (e) => {
     $(`${id}_val`).textContent = e.target.value;
@@ -82,10 +175,6 @@ $("create-patient-btn").addEventListener("click", async () => {
 
 $("symptom-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!currentPatientId) {
-    alert("Create a patient profile first.");
-    return;
-  }
 
   const payload = {
     entry_date: $("entry_date").value,
@@ -102,7 +191,7 @@ $("symptom-form").addEventListener("submit", async (e) => {
   };
 
   try {
-    await apiPost(`/patients/${currentPatientId}/symptoms`, payload);
+    await apiPost("/patients/me/symptoms", payload);
     e.target.reset();
     $("entry_date").valueAsDate = new Date();
     ["pain_level", "bleeding_level", "fatigue_level"].forEach((id) => {
@@ -119,11 +208,11 @@ $("symptom-form").addEventListener("submit", async (e) => {
 $("refresh-btn").addEventListener("click", refreshTimelineAndRisk);
 
 async function refreshTimelineAndRisk() {
-  if (!currentPatientId) return;
+  if (!authToken) return;
 
   const [timeline, risk] = await Promise.all([
-    apiGet(`/patients/${currentPatientId}/timeline`),
-    apiGet(`/patients/${currentPatientId}/risk-score`),
+    apiGet("/patients/me/timeline"),
+    apiGet("/patients/me/risk-score"),
   ]);
 
   renderTimelineChart(timeline);
@@ -172,7 +261,7 @@ function renderRisk(risk) {
 
   const tierLabel = $("risk-tier-label");
   tierLabel.textContent = risk.tier;
-  tierLabel.className = risk.tier; // 'high' | 'moderate' | 'low' -> matches CSS
+  tierLabel.className = risk.tier;
 
   $("risk-recommendation").textContent = risk.recommendation;
   $("risk-disclaimer").textContent = risk.disclaimer;
@@ -192,21 +281,18 @@ function renderRisk(risk) {
   }
 }
 
-// ---------- Resume existing patient on page load ----------
+// ---------- Resume session on page load ----------
 
 window.addEventListener("DOMContentLoaded", async () => {
   $("entry_date").valueAsDate = new Date();
-  if (currentPatientId) {
+  if (authToken) {
     try {
-      const patient = await apiGet(`/patients/${currentPatientId}`);
-      $("patient-status").textContent = `Welcome back (profile id ${patient.id}).`;
-      showSection("log-section");
-      showSection("results-section");
-      await refreshTimelineAndRisk();
+      await apiGet("/auth/me");
+      await afterLogin();
     } catch {
-      // Stored id no longer valid (e.g. DB was reset) -- start fresh.
-      localStorage.removeItem("endotrack_patient_id");
-      currentPatientId = null;
+      // Token expired or invalid -- clear it and show the login form again.
+      authToken = null;
+      localStorage.removeItem("endotrack_token");
     }
   }
 });

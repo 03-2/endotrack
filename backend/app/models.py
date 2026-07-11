@@ -18,10 +18,29 @@ from sqlalchemy.sql import func
 from .database import Base
 
 
+class User(Base):
+    """
+    An account that can log in. Kept separate from Patient so that, later,
+    a clinician/admin account type could exist without a symptom-tracking
+    profile of their own.
+    """
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    patient = relationship(
+        "Patient", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+
+
 class Patient(Base):
     __tablename__ = "patients"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
     display_name = Column(String, nullable=True)  # optional, can be pseudonymous
     age = Column(Integer, nullable=True)
     trying_to_conceive = Column(Boolean, default=False)
@@ -29,6 +48,7 @@ class Patient(Base):
     family_history_endometriosis = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    user = relationship("User", back_populates="patient")
     symptom_entries = relationship("SymptomEntry", back_populates="patient", cascade="all, delete-orphan")
     cycle_entries = relationship("CycleEntry", back_populates="patient", cascade="all, delete-orphan")
 

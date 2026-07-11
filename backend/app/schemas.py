@@ -5,7 +5,28 @@ FastAPI practice -- it lets the API shape evolve independently of the DB schema.
 """
 from datetime import date, datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
+
+
+# ---------- Auth / Users ----------
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="Minimum 8 characters")
+
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 
 # ---------- Patient ----------

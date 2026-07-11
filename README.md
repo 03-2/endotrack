@@ -27,6 +27,26 @@ endotrack-mvp/
     style.css
 ```
 
+## Authentication (added in v0.2)
+
+Every account now needs to register with an email + password, then log in to
+get a token before doing anything else. Passwords are hashed with bcrypt
+before being stored -- the plaintext password is never saved. Each account
+has exactly one patient profile, and every `/patients/me/...` route only
+ever touches the logged-in user's own data.
+
+Before running this anywhere beyond your own machine, set a real secret key
+(used to sign login tokens) instead of the built-in development default:
+
+```bash
+export ENDOTRACK_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+```
+
+Run this in the same terminal before `uvicorn`, or add it to your shell
+profile. Anyone with this key could forge valid login tokens, so never
+commit a real one to git (it isn't hardcoded anywhere in this repo -- the
+fallback value is clearly labeled as dev-only in `backend/app/auth.py`).
+
 ## 1. Run the backend
 
 Open a terminal in VS Code (`` Ctrl+` ``), then:
@@ -70,12 +90,20 @@ if you ever need to change this).
 
 ## 3. Try it
 
-1. Fill in the patient profile form and click "Create profile".
-2. Log a few days of symptoms (vary the pain level, mark some as "on
+1. Enter an email and password (8+ characters), then click "Create account".
+   You'll be logged in automatically.
+2. Fill in the patient profile form and click "Create profile" (shown once,
+   the first time you log in).
+3. Log a few days of symptoms (vary the pain level, mark some as "on
    period", check some flags like bowel symptoms or pain during
    intercourse).
-3. Watch the pain timeline chart and risk score update. Click "Refresh
+4. Watch the pain timeline chart and risk score update. Click "Refresh
    timeline & risk score" any time.
+5. Click "Log out" to test the login flow again with the same account --
+   your data and profile will still be there.
+
+Your login session is remembered in the browser (via a token in
+localStorage), so refreshing the page keeps you logged in.
 
 The risk score is deliberately **explainable**: every point comes from a
 named factor with plain-language reasoning (see `risk_engine.py`). This
@@ -99,11 +127,7 @@ shown alongside the score in any UI you build on top of this.
 
 ## Where to go next (in rough order of effort)
 
-1. **Auth** — the MVP has no login; anyone with the patient id can read/write
-   their data. Add simple email+password or phone+OTP auth (FastAPI has
-   good recipes for this) before storing anything sensitive beyond your own
-   testing.
-2. **Postgres** — swap `DATABASE_URL` in `backend/app/database.py` from
+1. **Postgres** — swap `DATABASE_URL` in `backend/app/database.py` from
    SQLite to a Postgres URL (e.g. from Railway or Render) once you need
    multi-user, concurrent access. No other code changes needed.
 3. **Cycle-aware analytics** — you already have `CycleEntry`; add an endpoint
