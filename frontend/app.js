@@ -45,6 +45,28 @@ function hideSection(id) {
   $(id).classList.add("hidden");
 }
 
+// ---------- Sliding page mechanism ----------
+// #page-login and #page-app sit side by side; toggling "show-app" on the
+// wrapper slides one out and the other in (see the CSS transition rules).
+// Because both pages are position:absolute, the wrapper needs its height
+// set explicitly in JS -- otherwise it collapses to 0, since absolutely
+// positioned children don't contribute to a parent's height.
+
+function measurePageHeight(pageEl) {
+  $("page-wrapper").style.height = `${pageEl.scrollHeight}px`;
+}
+
+function goToAppPage() {
+  $("page-wrapper").classList.add("show-app");
+  // Wait a tick so newly-revealed sections are laid out before measuring.
+  requestAnimationFrame(() => measurePageHeight($("page-app")));
+}
+
+function goToLoginPage() {
+  $("page-wrapper").classList.remove("show-app");
+  requestAnimationFrame(() => measurePageHeight($("page-login")));
+}
+
 // ---------- Auth ----------
 
 $("login-btn").addEventListener("click", async () => {
@@ -108,18 +130,14 @@ $("logout-btn").addEventListener("click", () => {
   $("auth_email").value = "";
   $("auth_password").value = "";
   $("auth-status").textContent = "Logged out.";
-  $("login-btn").classList.remove("hidden");
-  $("register-btn").classList.remove("hidden");
-  $("logout-btn").classList.add("hidden");
   hideSection("setup-section");
   hideSection("log-section");
   hideSection("results-section");
+  goToLoginPage();
 });
 
 async function afterLogin() {
-  $("login-btn").classList.add("hidden");
-  $("register-btn").classList.add("hidden");
-  $("logout-btn").classList.remove("hidden");
+  goToAppPage();
 
   // Does this account already have a patient profile?
   try {
@@ -133,6 +151,7 @@ async function afterLogin() {
     // No profile yet (404) -- show the create-profile form.
     showSection("setup-section");
   }
+  requestAnimationFrame(() => measurePageHeight($("page-app")));
 }
 
 // ---------- Patient profile setup ----------
@@ -160,6 +179,7 @@ $("create-patient-btn").addEventListener("click", async () => {
     showSection("results-section");
     $("entry_date").valueAsDate = new Date();
     await refreshTimelineAndRisk();
+    requestAnimationFrame(() => measurePageHeight($("page-app")));
   } catch (err) {
     $("patient-status").textContent = `Error: ${err.message}`;
   }
@@ -216,7 +236,58 @@ async function refreshTimelineAndRisk() {
   ]);
 
   renderTimelineChart(timeline);
+  renderGallery(timeline);
   renderRisk(risk);
+
+  if ($("page-wrapper").classList.contains("show-app")) {
+    requestAnimationFrame(() => measurePageHeight($("page-app")));
+  }
+}
+
+function painTier(painLevel) {
+  if (painLevel >= 7) return "pain-high";
+  if (painLevel >= 4) return "pain-moderate";
+  return "pain-low";
+}
+
+function renderGallery(timeline) {
+  const gallery = $("symptom-gallery");
+  const emptyState = $("gallery-empty-state");
+
+  if (timeline.length === 0) {
+    gallery.innerHTML = "";
+    emptyState.classList.remove("hidden");
+    return;
+  }
+  emptyState.classList.add("hidden");
+
+  // Show most recent entries first, newest on top-left of the grid.
+  const sorted = [...timeline].reverse();
+
+  gallery.innerHTML = sorted
+    .map((entry) => {
+      const dateLabel = new Date(entry.date + "T00:00:00").toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+      const icons = [
+        entry.on_period ? "🩸" : "",
+        entry.bowel_symptoms ? "🌀" : "",
+        entry.bladder_symptoms ? "💧" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      return `
+        <div class="gallery-card ${painTier(entry.pain_level)}" title="${dateLabel}">
+          <div class="gc-date">${dateLabel}</div>
+          <div class="gc-pain">${entry.pain_level}</div>
+          <div class="gc-pain-label">pain / 10</div>
+          ${icons ? `<div class="gc-icons">${icons}</div>` : ""}
+        </div>
+      `;
+    })
+    .join("");
 }
 
 function renderTimelineChart(timeline) {
@@ -239,8 +310,8 @@ function renderTimelineChart(timeline) {
         {
           label: "Pain level (0-10)",
           data: painData,
-          borderColor: "#8b3a62",
-          backgroundColor: "rgba(139,58,98,0.1)",
+          borderColor: "#0d9488",
+          backgroundColor: "rgba(13,148,136,0.1)",
           tension: 0.25,
           fill: true,
           pointRadius: 3,
@@ -283,8 +354,17 @@ function renderRisk(risk) {
 
 // ---------- Resume session on page load ----------
 
+window.addEventListener("resize", () => {
+  const activePage = $("page-wrapper").classList.contains("show-app")
+    ? $("page-app")
+    : $("page-login");
+  measurePageHeight(activePage);
+});
+
 window.addEventListener("DOMContentLoaded", async () => {
   $("entry_date").valueAsDate = new Date();
+  measurePageHeight($("page-login")); // default state: showing the login page
+
   if (authToken) {
     try {
       await apiGet("/auth/me");

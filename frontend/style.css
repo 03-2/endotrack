@@ -1,55 +1,105 @@
 :root {
-  --primary: #8b3a62;
-  --primary-light: #f4e4ec;
-  --text: #2b2b2b;
-  --muted: #6b6b6b;
-  --high: #c0392b;
-  --moderate: #e0a136;
-  --low: #3d8b53;
-  --border: #e2d3da;
+  /* Healthcare-style palette -- calm teal/blue, easy to swap later.
+     Change these variables to re-theme the whole app in one place. */
+  --primary: #0d9488;        /* teal-600 */
+  --primary-dark: #0f766e;   /* teal-700, used for hover states */
+  --primary-light: #ccfbf1;  /* teal-100, used for soft backgrounds/badges */
+  --accent: #0369a1;         /* a supporting blue, used sparingly */
+  --text: #1f2937;           /* gray-800 */
+  --muted: #64748b;          /* slate-500 */
+  --high: #dc2626;
+  --moderate: #d97706;
+  --low: #059669;
+  --border: #d7e6e4;
+  --bg: #f5faf9;
 }
 
 * { box-sizing: border-box; }
 
 body {
   font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #faf7f8;
+  background: var(--bg);
   color: var(--text);
   margin: 0;
   padding: 0 0 3rem 0;
 }
 
 header {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   color: white;
   padding: 1.5rem 1rem 1.2rem;
   text-align: center;
 }
 
-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
-.tagline { margin: 0; opacity: 0.9; font-size: 0.95rem; }
+header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; letter-spacing: -0.01em; }
+.tagline { margin: 0; opacity: 0.92; font-size: 0.95rem; }
 
 main {
   max-width: 640px;
   margin: 1.5rem auto;
   padding: 0 1rem;
+}
+
+/* ---------- Sliding page mechanism ---------- */
+/* #page-login and #page-app sit side by side (login at x=0, app at x=100%).
+   Toggling .show-app on the wrapper slides both left by 100%, so login exits
+   left and app enters from the right. Height is set dynamically in JS to
+   match whichever page is currently active, since app content grows as
+   sections reveal (see measurePageHeight() in app.js). */
+.page-wrapper {
+  position: relative;
+  overflow: hidden;
+  transition: height 0.4s ease;
+}
+
+.page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#page-login { transform: translateX(0); }
+#page-app { transform: translateX(100%); }
+
+.page-wrapper.show-app #page-login { transform: translateX(-100%); }
+.page-wrapper.show-app #page-app { transform: translateX(0); }
+
+.app-topbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.app-topbar button {
+  margin-top: 0;
+}
+
+/* ---------- Smooth appearance animation ---------- */
+/* Every .card plays a gentle fade + rise whenever it's rendered visible.
+   Since `display:none -> block` happens the same frame the animation
+   starts, this reliably fires each time a hidden section is revealed. */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .card {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(15, 118, 110, 0.06);
+  animation: fadeInUp 0.45s ease both;
 }
 
 .card h2 {
   margin-top: 0;
   font-size: 1.1rem;
-  color: var(--primary);
+  color: var(--primary-dark);
 }
 
 .hidden { display: none; }
@@ -70,15 +120,29 @@ label.checkbox {
 label.checkbox input { width: auto; }
 
 input[type="text"],
+input[type="email"],
+input[type="password"],
 input[type="number"],
 input[type="date"],
 textarea {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.55rem 0.6rem;
   margin-top: 0.3rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
 }
 
 input[type="range"] {
@@ -96,9 +160,11 @@ button {
   font-size: 0.95rem;
   cursor: pointer;
   margin-top: 0.5rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
-button:hover { opacity: 0.92; }
+button:hover { background: var(--primary-dark); }
+button:active { transform: scale(0.98); }
 
 button.secondary {
   background: white;
@@ -107,9 +173,13 @@ button.secondary {
   margin-left: 0.5rem;
 }
 
+button.secondary:hover {
+  background: var(--primary-light);
+}
+
 #auth-status {
   font-size: 0.9rem;
-  color: var(--primary);
+  color: var(--primary-dark);
   min-height: 1.2em;
 }
 
@@ -123,7 +193,7 @@ button.secondary {
 #risk-score-number {
   font-size: 2.2rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-dark);
 }
 
 #risk-tier-label {
@@ -133,11 +203,12 @@ button.secondary {
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-#risk-tier-label.high { background: #fce4e1; color: var(--high); }
-#risk-tier-label.moderate { background: #fbf0da; color: var(--moderate); }
-#risk-tier-label.low { background: #e3f1e6; color: var(--low); }
+#risk-tier-label.high { background: #fce8e6; color: var(--high); }
+#risk-tier-label.moderate { background: #fdf1dd; color: var(--moderate); }
+#risk-tier-label.low { background: #e1f5ec; color: var(--low); }
 
 #risk-factors {
   padding-left: 1.1rem;
@@ -154,14 +225,80 @@ button.secondary {
   margin-top: 0.8rem;
 }
 
+#patient-status {
+  font-size: 0.9rem;
+  color: var(--primary-dark);
+}
+
+/* ---------- Symptom gallery grid ---------- */
+/* A grid of "day cards," one per logged entry -- inspired by portfolio-style
+   gallery grids, repurposed here to show symptom history at a glance. */
+#symptom-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.75rem;
+}
+
+.gallery-card {
+  border-radius: 10px;
+  padding: 0.7rem 0.6rem;
+  border: 1px solid var(--border);
+  background: white;
+  animation: fadeInUp 0.35s ease both;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: default;
+}
+
+.gallery-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.12);
+}
+
+.gallery-card .gc-date {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.gallery-card .gc-pain {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gallery-card .gc-pain-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.gallery-card .gc-icons {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+}
+
+/* Pain-level color coding, healthcare-style: green (mild) -> amber -> red (severe) */
+.gallery-card.pain-low { border-left: 4px solid var(--low); }
+.gallery-card.pain-low .gc-pain { color: var(--low); }
+
+.gallery-card.pain-moderate { border-left: 4px solid var(--moderate); }
+.gallery-card.pain-moderate .gc-pain { color: var(--moderate); }
+
+.gallery-card.pain-high { border-left: 4px solid var(--high); }
+.gallery-card.pain-high .gc-pain { color: var(--high); }
+
+#gallery-empty-state {
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0.5rem 0;
+}
+
 footer {
   text-align: center;
   font-size: 0.8rem;
   color: var(--muted);
   margin-top: 2rem;
-}
-
-#patient-status {
-  font-size: 0.9rem;
-  color: var(--primary);
 }

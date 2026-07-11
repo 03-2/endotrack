@@ -14,114 +14,129 @@
   </header>
 
   <main>
-    <section id="auth-section" class="card">
-      <h2>Log in or create an account</h2>
-      <div id="auth-form">
-        <label>Email
-          <input type="email" id="auth_email" placeholder="you@example.com" />
-        </label>
-        <label>Password
-          <input type="password" id="auth_password" placeholder="At least 8 characters" />
-        </label>
-        <button id="login-btn">Log in</button>
-        <button id="register-btn" class="secondary">Create account</button>
-        <button id="logout-btn" class="secondary hidden">Log out</button>
+    <div id="page-wrapper" class="page-wrapper">
+
+      <div id="page-login" class="page">
+        <section id="auth-section" class="card">
+          <h2>Log in or create an account</h2>
+          <div id="auth-form">
+            <label>Email
+              <input type="email" id="auth_email" placeholder="you@example.com" />
+            </label>
+            <label>Password
+              <input type="password" id="auth_password" placeholder="At least 8 characters" />
+            </label>
+            <button id="login-btn">Log in</button>
+            <button id="register-btn" class="secondary">Create account</button>
+          </div>
+          <p id="auth-status"></p>
+        </section>
       </div>
-      <p id="auth-status"></p>
-    </section>
 
-    <section id="setup-section" class="card hidden">
-      <h2>1. Patient profile</h2>
-      <div id="patient-form">
-        <label>Display name (or pseudonym)
-          <input type="text" id="display_name" placeholder="e.g. Patient A" />
-        </label>
-        <label>Age
-          <input type="number" id="age" min="0" max="120" />
-        </label>
-        <label class="checkbox">
-          <input type="checkbox" id="trying_to_conceive" />
-          Currently trying to conceive
-        </label>
-        <label id="months-trying-wrap" style="display:none;">Months trying
-          <input type="number" id="months_trying_to_conceive" min="0" />
-        </label>
-        <label class="checkbox">
-          <input type="checkbox" id="family_history_endometriosis" />
-          Family history of endometriosis
-        </label>
-        <button id="create-patient-btn">Create profile</button>
-      </div>
-      <p id="patient-status"></p>
-    </section>
-
-    <section id="log-section" class="card hidden">
-      <h2>2. Log today's symptoms</h2>
-      <form id="symptom-form">
-        <label>Date
-          <input type="date" id="entry_date" required />
-        </label>
-
-        <label>Pain level: <span id="pain_level_val">0</span>/10
-          <input type="range" id="pain_level" min="0" max="10" value="0" />
-        </label>
-
-        <label class="checkbox">
-          <input type="checkbox" id="on_period" /> Currently on period
-        </label>
-
-        <label class="checkbox">
-          <input type="checkbox" id="pain_during_intercourse" /> Pain during intercourse today
-        </label>
-
-        <label>Bleeding heaviness: <span id="bleeding_level_val">0</span>/10
-          <input type="range" id="bleeding_level" min="0" max="10" value="0" />
-        </label>
-
-        <label>Fatigue: <span id="fatigue_level_val">0</span>/10
-          <input type="range" id="fatigue_level" min="0" max="10" value="0" />
-        </label>
-
-        <label class="checkbox">
-          <input type="checkbox" id="bowel_symptoms" /> Bowel symptoms (pain/diarrhea/constipation)
-        </label>
-
-        <label class="checkbox">
-          <input type="checkbox" id="bladder_symptoms" /> Bladder symptoms
-        </label>
-
-        <label class="checkbox">
-          <input type="checkbox" id="took_pain_medication" /> Took pain medication
-        </label>
-
-        <label class="checkbox">
-          <input type="checkbox" id="missed_work_or_school" /> Missed work/school today
-        </label>
-
-        <label>Notes
-          <textarea id="notes" rows="2" placeholder="Anything else worth remembering?"></textarea>
-        </label>
-
-        <button type="submit">Save entry</button>
-      </form>
-    </section>
-
-    <section id="results-section" class="card hidden">
-      <h2>3. Your pain timeline</h2>
-      <canvas id="timeline-chart" height="120"></canvas>
-
-      <h2>4. Screening risk score</h2>
-      <div id="risk-score-box">
-        <div id="risk-gauge">
-          <span id="risk-score-number">--</span>
-          <span id="risk-tier-label">--</span>
+      <div id="page-app" class="page">
+        <div class="app-topbar">
+          <button id="logout-btn" class="secondary">Log out</button>
         </div>
-        <p id="risk-recommendation"></p>
-        <ul id="risk-factors"></ul>
-        <p class="disclaimer" id="risk-disclaimer"></p>
+
+        <section id="setup-section" class="card hidden">
+          <h2>1. Patient profile</h2>
+          <div id="patient-form">
+            <label>Display name (or pseudonym)
+              <input type="text" id="display_name" placeholder="e.g. Patient A" />
+            </label>
+            <label>Age
+              <input type="number" id="age" min="0" max="120" />
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="trying_to_conceive" />
+              Currently trying to conceive
+            </label>
+            <label id="months-trying-wrap" style="display:none;">Months trying
+              <input type="number" id="months_trying_to_conceive" min="0" />
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="family_history_endometriosis" />
+              Family history of endometriosis
+            </label>
+            <button id="create-patient-btn">Create profile</button>
+          </div>
+          <p id="patient-status"></p>
+        </section>
+
+        <section id="log-section" class="card hidden">
+          <h2>2. Log today's symptoms</h2>
+          <form id="symptom-form">
+            <label>Date
+              <input type="date" id="entry_date" required />
+            </label>
+
+            <label>Pain level: <span id="pain_level_val">0</span>/10
+              <input type="range" id="pain_level" min="0" max="10" value="0" />
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="on_period" /> Currently on period
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="pain_during_intercourse" /> Pain during intercourse today
+            </label>
+
+            <label>Bleeding heaviness: <span id="bleeding_level_val">0</span>/10
+              <input type="range" id="bleeding_level" min="0" max="10" value="0" />
+            </label>
+
+            <label>Fatigue: <span id="fatigue_level_val">0</span>/10
+              <input type="range" id="fatigue_level" min="0" max="10" value="0" />
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="bowel_symptoms" /> Bowel symptoms (pain/diarrhea/constipation)
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="bladder_symptoms" /> Bladder symptoms
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="took_pain_medication" /> Took pain medication
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="missed_work_or_school" /> Missed work/school today
+            </label>
+
+            <label>Notes
+              <textarea id="notes" rows="2" placeholder="Anything else worth remembering?"></textarea>
+            </label>
+
+            <button type="submit">Save entry</button>
+          </form>
+        </section>
+
+        <section id="results-section" class="card hidden">
+          <h2>3. Your pain timeline</h2>
+          <canvas id="timeline-chart" height="120"></canvas>
+
+          <h2 style="margin-top:1.5rem;">Symptom gallery</h2>
+          <div id="symptom-gallery"></div>
+          <p id="gallery-empty-state" class="hidden">No entries logged yet -- your first logged day will appear here.</p>
+
+          <h2>4. Screening risk score</h2>
+          <div id="risk-score-box">
+            <div id="risk-gauge">
+              <span id="risk-score-number">--</span>
+              <span id="risk-tier-label">--</span>
+            </div>
+            <p id="risk-recommendation"></p>
+            <ul id="risk-factors"></ul>
+            <p class="disclaimer" id="risk-disclaimer"></p>
+          </div>
+          <button id="refresh-btn">Refresh timeline &amp; risk score</button>
+        </section>
       </div>
-      <button id="refresh-btn">Refresh timeline &amp; risk score</button>
-    </section>
+
+    </div>
   </main>
 
   <footer>
