@@ -1,0 +1,154 @@
+:root {
+  --primary: #8b3a62;
+  --primary-light: #f4e4ec;
+  --text: #2b2b2b;
+  --muted: #6b6b6b;
+  --high: #c0392b;
+  --moderate: #e0a136;
+  --low: #3d8b53;
+  --border: #e2d3da;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #faf7f8;
+  color: var(--text);
+  margin: 0;
+  padding: 0 0 3rem 0;
+}
+
+header {
+  background: var(--primary);
+  color: white;
+  padding: 1.5rem 1rem 1.2rem;
+  text-align: center;
+}
+
+header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+.tagline { margin: 0; opacity: 0.9; font-size: 0.95rem; }
+
+main {
+  max-width: 640px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+.hidden { display: none; }
+
+label {
+  display: block;
+  margin-bottom: 0.9rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+label.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+label.checkbox input { width: auto; }
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+textarea {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin-top: 0.3rem;
+  accent-color: var(--primary);
+}
+
+button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+button:hover { opacity: 0.92; }
+
+#risk-gauge {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+#risk-score-number {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+#risk-tier-label {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+#risk-tier-label.high { background: #fce4e1; color: var(--high); }
+#risk-tier-label.moderate { background: #fbf0da; color: var(--moderate); }
+#risk-tier-label.low { background: #e3f1e6; color: var(--low); }
+
+#risk-factors {
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+#risk-factors li { margin-bottom: 0.4rem; }
+
+.disclaimer {
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-top: 1px dashed var(--border);
+  padding-top: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+footer {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 2rem;
+}
+
+#patient-status {
+  font-size: 0.9rem;
+  color: var(--primary);
+}
