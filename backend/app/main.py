@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from . import models, schemas, risk_engine, auth
+from . import models, schemas, risk_engine, auth, cycle_analysis
 from .database import engine, get_db, Base
 
 Base.metadata.create_all(bind=engine)
@@ -177,6 +177,25 @@ def list_cycle_entries(
         .order_by(models.CycleEntry.start_date)
         .all()
     )
+
+
+@app.get("/patients/me/cycle-analysis", response_model=schemas.CycleAnalysisOut)
+def get_cycle_analysis(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    patient = _get_own_patient(db, current_user)
+    cycles = (
+        db.query(models.CycleEntry)
+        .filter(models.CycleEntry.patient_id == patient.id)
+        .all()
+    )
+    entries = (
+        db.query(models.SymptomEntry)
+        .filter(models.SymptomEntry.patient_id == patient.id)
+        .all()
+    )
+    return cycle_analysis.compute_cycle_day_pain(cycles, entries)
 
 
 # ---------- Risk assessment ----------

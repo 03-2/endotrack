@@ -4,6 +4,7 @@ const API_BASE = "http://127.0.0.1:8000";
 
 let authToken = localStorage.getItem("endotrack_token") || null;
 let timelineChart = null;
+let cycleChart = null;
 
 // ---------- Helpers ----------
 
@@ -132,6 +133,7 @@ $("logout-btn").addEventListener("click", () => {
   $("auth-status").textContent = "Logged out.";
   hideSection("setup-section");
   hideSection("log-section");
+  hideSection("cycle-section");
   hideSection("results-section");
   goToLoginPage();
 });
@@ -144,6 +146,7 @@ async function afterLogin() {
     await apiGet("/patients/me");
     // Profile exists -- skip straight to logging symptoms.
     showSection("log-section");
+    showSection("cycle-section");
     showSection("results-section");
     $("entry_date").valueAsDate = new Date();
     await refreshTimelineAndRisk();
@@ -176,6 +179,7 @@ $("create-patient-btn").addEventListener("click", async () => {
     $("patient-status").textContent = "Profile created. You can start logging symptoms below.";
     hideSection("setup-section");
     showSection("log-section");
+    showSection("cycle-section");
     showSection("results-section");
     $("entry_date").valueAsDate = new Date();
     await refreshTimelineAndRisk();
@@ -185,9 +189,62 @@ $("create-patient-btn").addEventListener("click", async () => {
   }
 });
 
+// ---------- Cycle logging ----------
+
+$("cycle-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    start_date: $("cycle_start_date").value,
+    end_date: $("cycle_end_date").value || null,
+    flow_level: Number($("flow_level").value),
+  };
+
+  try {
+    await apiPost("/patients/me/cycles", payload);
+    $("cycle-status").textContent = "Period logged.";
+    e.target.reset();
+    $("flow_level_val").textContent = "0";
+    await refreshTimelineAndRisk();
+  } catch (err) {
+    $("cycle-status").textContent = `Error: ${err.message}`;
+  }
+});
+
+async function renderCycleHistory() {
+  const cycles = await apiGet("/patients/me/cycles");
+  const container = $("cycle-history");
+
+  if (cycles.length === 0) {
+    container.innerHTML = `<p style="font-size:0.85rem; color:var(--muted);">No periods logged yet.</p>`;
+    return;
+  }
+
+  // Most recent first
+  const sorted = [...cycles].reverse();
+  const rows = sorted
+    .map((c) => {
+      const start = new Date(c.start_date + "T00:00:00").toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+      const end = c.end_date
+        ? new Date(c.end_date + "T00:00:00").toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })
+        : "ongoing";
+      const flow = c.flow_level != null ? `${c.flow_level}/10 flow` : "";
+      return `<li>${start} &ndash; ${end} ${flow ? `&middot; ${flow}` : ""}</li>`;
+    })
+    .join("");
+
+  container.innerHTML = `<ul style="padding-left:1.1rem; font-size:0.85rem; color:var(--muted);">${rows}</ul>`;
+}
+
 // ---------- Symptom logging ----------
 
-["pain_level", "bleeding_level", "fatigue_level"].forEach((id) => {
+["pain_level", "bleeding_level", "fatigue_level", "flow_level"].forEach((id) => {
   $(id).addEventListener("input", (e) => {
     $(`${id}_val`).textContent = e.target.value;
   });
@@ -230,14 +287,17 @@ $("refresh-btn").addEventListener("click", refreshTimelineAndRisk);
 async function refreshTimelineAndRisk() {
   if (!authToken) return;
 
-  const [timeline, risk] = await Promise.all([
+  const [timeline, risk, cycleAnalysis] = await Promise.all([
     apiGet("/patients/me/timeline"),
     apiGet("/patients/me/risk-score"),
+    apiGet("/patients/me/cycle-analysis"),
   ]);
 
   renderTimelineChart(timeline);
   renderGallery(timeline);
   renderRisk(risk);
+  renderCycleCorrelationChart(cycleAnalysis);
+  await renderCycleHistory();
 
   if ($("page-wrapper").classList.contains("show-app")) {
     requestAnimationFrame(() => measurePageHeight($("page-app")));
@@ -315,6 +375,57 @@ function renderTimelineChart(timeline) {
           tension: 0.25,
           fill: true,
           pointRadius: 3,
+        },
+      ],
+    },
+    options: {
+      scales: {
+        y: { min: 0, max: 10, ticks: { stepSize: 2 } },
+      },
+      plugins: { legend: { display: false } },
+    },
+  });
+}
+
+function renderCycleCorrelationChart(cycleAnalysis) {
+  const statusEl = $("cycle-analysis-status");
+  const canvas = $("cycle-correlation-chart");
+
+  if (cycleAnalysis.cycles_logged === 0) {
+    statusEl.textContent = "Log at least one period start date to see this chart.";
+    canvas.classList.add("hidden");
+    return;
+  }
+  if (cycleAnalysis.points.length === 0) {
+    statusEl.textContent = `${cycleAnalysis.cycles_logged} period(s) logged, but no symptom entries fall within a logged cycle yet.`;
+    canvas.classList.add("hidden");
+    return;
+  }
+
+  canvas.classList.remove("hidden");
+  statusEl.textContent = `Based on ${cycleAnalysis.cycles_logged} logged period(s) and ${cycleAnalysis.entries_matched} matched symptom entries. Day 1 = period start.`;
+
+  const labels = cycleAnalysis.points.map((p) => `Day ${p.cycle_day}`);
+  const avgPain = cycleAnalysis.points.map((p) => p.avg_pain);
+
+  const ctx = canvas.getContext("2d");
+  if (cycleChart) {
+    cycleChart.data.labels = labels;
+    cycleChart.data.datasets[0].data = avgPain;
+    cycleChart.update();
+    return;
+  }
+
+  cycleChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Average pain by cycle day",
+          data: avgPain,
+          backgroundColor: "rgba(3, 105, 161, 0.55)",
+          borderRadius: 4,
         },
       ],
     },

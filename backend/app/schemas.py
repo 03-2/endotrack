@@ -87,6 +87,18 @@ class CycleEntryOut(CycleEntryCreate):
         from_attributes = True
 
 
+class CycleDayPainPoint(BaseModel):
+    cycle_day: int
+    avg_pain: float
+    entry_count: int
+
+
+class CycleAnalysisOut(BaseModel):
+    points: List[CycleDayPainPoint]
+    cycles_logged: int
+    entries_matched: int
+
+
 # ---------- Risk Assessment ----------
 
 class RiskFactor(BaseModel):

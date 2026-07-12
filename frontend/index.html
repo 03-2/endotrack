@@ -114,15 +114,41 @@
           </form>
         </section>
 
+        <section id="cycle-section" class="card hidden">
+          <h2>3. Log a period</h2>
+          <p style="font-size:0.85rem; color:var(--muted); margin-top:-0.5rem;">
+            Log the start date each time your period begins -- this is what powers the
+            cycle-day vs pain chart below.
+          </p>
+          <form id="cycle-form">
+            <label>Period start date
+              <input type="date" id="cycle_start_date" required />
+            </label>
+            <label>Period end date (optional, fill in once it ends)
+              <input type="date" id="cycle_end_date" />
+            </label>
+            <label>Flow heaviness: <span id="flow_level_val">0</span>/10
+              <input type="range" id="flow_level" min="0" max="10" value="0" />
+            </label>
+            <button type="submit">Save period</button>
+          </form>
+          <p id="cycle-status"></p>
+          <div id="cycle-history"></div>
+        </section>
+
         <section id="results-section" class="card hidden">
-          <h2>3. Your pain timeline</h2>
+          <h2>4. Your pain timeline</h2>
           <canvas id="timeline-chart" height="120"></canvas>
 
           <h2 style="margin-top:1.5rem;">Symptom gallery</h2>
           <div id="symptom-gallery"></div>
           <p id="gallery-empty-state" class="hidden">No entries logged yet -- your first logged day will appear here.</p>
 
-          <h2>4. Screening risk score</h2>
+          <h2 style="margin-top:1.5rem;">Cycle-day vs pain correlation</h2>
+          <p id="cycle-analysis-status" style="font-size:0.85rem; color:var(--muted);"></p>
+          <canvas id="cycle-correlation-chart" height="120"></canvas>
+
+          <h2>5. Screening risk score</h2>
           <div id="risk-score-box">
             <div id="risk-gauge">
               <span id="risk-score-number">--</span>
