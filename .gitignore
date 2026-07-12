@@ -2,4 +2,5 @@ venv/
 __pycache__/
 *.pyc
 endotrack.db
-.vscode/
+.vscode/.env
+backend/.env
